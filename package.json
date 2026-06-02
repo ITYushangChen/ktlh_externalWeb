@@ -1,0 +1,36 @@
+{
+  "name": "ktlh-delivery-guide",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3999",
+    "build": "next build",
+    "start": "next start -p 3999",
+    "clean": "rm -rf .next",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.8",
+    "next": "^15.3.3",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.176.0",
+    "@react-three/fiber": "^9.1.2",
+    "@react-three/drei": "^10.0.7"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.7",
+    "@types/node": "^22.15.21",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
+    "@types/three": "^0.176.0",
+    "eslint": "^9.27.0",
+    "eslint-config-next": "^15.3.3",
+    "tailwindcss": "^4.1.7",
+    "typescript": "^5.8.3"
+  }
+}
