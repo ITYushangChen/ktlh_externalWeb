@@ -10,6 +10,8 @@
 
 ## 管理端 `/admin`
 
+默认**无需密码**即可进入。若要启用登录：在 Vercel / `.env.local` 设置 `ADMIN_REQUIRE_AUTH=true` 并配置 `ADMIN_SECRET`，然后 Redeploy。
+
 1. **送货流程**：全类型共用，每行写一步
 2. **送货类型**：类型名称、接货负责人、手机号
 3. 下载固定二维码打印张贴
