@@ -1,10 +1,8 @@
 "use client";
 
-import { getAppBaseUrl } from "@/lib/env";
-
-export function FixedQRPanel() {
-  const url = getAppBaseUrl();
-  const qrSrc = "/api/qr";
+export function FixedQRPanel({ appUrl }: { appUrl: string }) {
+  const url = appUrl;
+  const qrSrc = `/api/qr?u=${encodeURIComponent(url)}`;
 
   const copy = async () => {
     await navigator.clipboard.writeText(url);

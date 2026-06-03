@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import QRCode from "qrcode";
-import { getAppBaseUrl } from "@/lib/env";
+import { resolveAppBaseUrl } from "@/lib/env";
 
 /** 固定厂区二维码（所有司机共用） */
-export async function GET() {
-  const url = getAppBaseUrl();
+export async function GET(request: NextRequest) {
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const proto = request.headers.get("x-forwarded-proto");
+  const url = resolveAppBaseUrl(host, proto);
 
   try {
     const png = await QRCode.toBuffer(url, {
@@ -17,7 +21,7 @@ export async function GET() {
     return new NextResponse(new Uint8Array(png), {
       headers: {
         "Content-Type": "image/png",
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "no-store",
       },
     });
   } catch {
