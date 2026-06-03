@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function LegacySelectPage() {
+export default function LegacySPage() {
   redirect("/");
 }

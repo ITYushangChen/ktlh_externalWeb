@@ -15,7 +15,7 @@ export async function GET() {
   if (config.supabaseReady && config.hasServiceRole) {
     try {
       const supabase = createAdminClient();
-      const { error } = await supabase.from("deliveries").select("id").limit(1);
+      const { error } = await supabase.from("delivery_types").select("id").limit(1);
       database = error
         ? { ok: false, message: formatApiError(error) }
         : { ok: true, message: "数据库连接正常" };
@@ -40,7 +40,6 @@ export async function GET() {
     database,
     pages: {
       home: "/",
-      guide: "/guide/{id}",
       admin: "/admin",
     },
   });

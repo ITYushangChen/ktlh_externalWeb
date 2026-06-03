@@ -9,7 +9,7 @@ export function ConfigError({ context }: { context?: string }) {
       <div className="card p-8 max-w-lg text-sm leading-relaxed space-y-4">
         <h1 className="text-xl font-bold text-red-700">站点配置未完成</h1>
         {context && <p className="text-slate-600">{context}</p>}
-        <p>Vercel 部署成功但页面无法加载，通常是 <strong>环境变量未配置</strong> 或配置后未重新部署。</p>
+        <p>页面无法加载，通常是 <strong>环境变量未配置</strong> 或 <strong>未执行数据库脚本 003_simplified.sql</strong>。</p>
         <ul className="list-disc pl-5 space-y-1 text-slate-700">
           {!status.hasSupabaseUrl && (
             <li>缺少 <code>NEXT_PUBLIC_SUPABASE_URL</code></li>

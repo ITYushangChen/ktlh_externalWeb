@@ -1,73 +1,43 @@
-# KTLH 送货引导系统
+# 开拓隆海送货引导
 
-面向外部送货司机的扫码引导：**厂区固定一个二维码**，微信扫一扫进入选货页，司机**选择本次货物**后查看对应的流程、联系人（一键拨号）及场内 2D/3D 路线。
+厂区固定二维码 → 司机扫码查看 **厂区平面图**、**统一送货流程**、**各送货类型对接人电话**。
 
-## 功能
+## 司机端 `/`
 
-| 角色 | 能力 |
-|------|------|
-| **调度/内勤** | 管理后台维护「货物条目」及各自流程、联系人、路线；下载**固定二维码**打印张贴 |
-| **司机** | 微信扫固定码 → `/s` 选货 → 查看该货物的流程、打电话、按节点路线前进 |
+- 显示厂区平面图（`public/factory-map.png`）
+- 旁侧显示管理员配置的全局送货流程（每行一步）
+- 下方列出所有送货类型、接货负责人、手机号（一键拨号）
 
-## 技术栈
+## 管理端 `/admin`
 
-- **前端/后端**：Next.js 15（App Router）
-- **数据库**：Supabase（PostgreSQL + RLS 公开读）
-- **3D 路线**：Three.js + React Three Fiber（可选）
+1. **送货流程**：全类型共用，每行写一步
+2. **送货类型**：类型名称、接货负责人、手机号
+3. 下载固定二维码打印张贴
 
-## 快速开始
+## 数据库
 
-### 1. Supabase
+在 Supabase SQL Editor 执行：
 
-1. 新建 [Supabase](https://supabase.com) 项目  
-2. 在 **SQL Editor** 依次执行 `supabase/migrations/001_initial.sql` 与 `002_picker_fields.sql`（若已执行过 001，只跑 002 即可）  
-3. 在 **Settings → API** 复制 URL、anon key、service_role key  
+```text
+supabase/migrations/003_simplified.sql
+```
 
-### 2. 环境变量
+（若从未建表，可先执行 `001_initial.sql`，但本版功能仅依赖 `003` 中的 `site_settings` 与 `delivery_types` 表。）
+
+## 本地开发
 
 ```bash
 cp .env.example .env.local
-# 编辑 .env.local 填入 Supabase 与 ADMIN_SECRET
-```
+# 填入 Supabase 密钥与 ADMIN_SECRET
 
-### 3. 安装与运行
-
-```bash
 npm install
 npm run dev
 ```
 
-- 首页：http://localhost:3999  
-- 管理后台：http://localhost:3999/admin（使用 `ADMIN_SECRET` 登录）  
-- 司机选货：http://localhost:3999/s（与固定二维码相同）  
+访问 http://localhost:3999
 
-### 4. 部署
+## 部署 Vercel
 
-推荐 [Vercel](https://vercel.com)：
+配置环境变量后 Redeploy。`NEXT_PUBLIC_APP_URL` 填生产域名（二维码链接用）。
 
-1. 导入仓库，配置与 `.env.example` 相同的环境变量  
-2. `NEXT_PUBLIC_APP_URL` 设为生产域名（二维码才会指向正确地址）  
-
-## 使用建议
-
-1. 在管理后台 **下载固定二维码**，贴在厂区门口（只需贴一次）  
-2. **新建货物条目** → 填写选货显示名、流程、联系人 → 可选配置场内路线  
-3. 司机扫码 → 选择对应货物 → 查看指引  
-4. 送完后 **标记已完成**，该货物从选货列表消失  
-
-### 路线坐标怎么填？
-
-在纸上画出厂区平面轮廓，按像素或米标出关键点位置，填入后台 **X/Y**。点「自动连线」按顺序连接。司机端 **平面图** 为 2D 逐步引导，**3D** 为立体预览（可拖动旋转）。
-
-后续可扩展：上传真实平面图底图、接入高德/腾讯地图室外导航、Supabase Auth 多用户管理。
-
-## 目录结构
-
-```
-src/app/s            # 司机选货页（固定二维码入口）
-src/app/s/[id]       # 某货物的指引详情
-src/app/d/[code]     # 旧链接兼容，重定向到 /s/[id]
-src/app/admin/       # 管理后台
-src/app/api/         # 管理 API、二维码生成
-supabase/migrations/ # 数据库脚本
-```
+更换平面图：替换 `public/factory-map.png` 后重新部署。

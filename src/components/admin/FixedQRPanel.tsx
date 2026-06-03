@@ -1,9 +1,9 @@
 "use client";
 
-import { getDriverPortalUrl } from "@/lib/delivery";
+import { getAppBaseUrl } from "@/lib/env";
 
 export function FixedQRPanel() {
-  const url = getDriverPortalUrl();
+  const url = getAppBaseUrl();
   const qrSrc = "/api/qr";
 
   const copy = async () => {
@@ -15,7 +15,7 @@ export function FixedQRPanel() {
     <div className="card p-6">
       <h2 className="font-bold text-lg mb-1">厂区固定二维码</h2>
       <p className="text-sm text-slate-500 mb-6">
-        全厂共用一张码，贴在门口或保安亭即可。司机扫码后自行选择货物类型，无需每人一单。
+        全厂共用一张码。司机扫码后查看厂区平面图、送货流程及各类型对接人电话。
       </p>
       <div className="flex flex-col sm:flex-row gap-6 items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
