@@ -42,6 +42,6 @@ npm run dev
 
 配置环境变量后 Redeploy。`NEXT_PUBLIC_APP_URL` 填生产域名（二维码链接用），例如 `https://ktlhweb.xyz`。
 
-预生成二维码：`public/qr-ktlhweb.xyz.png`（与 `NEXT_PUBLIC_APP_URL` 一致时需重新生成）。
+管理端与打印用固定二维码：`public/qr-ktlhweb.xyz.png`（内容为 `https://ktlhweb.xyz`，勿只写域名）。
 
 更换平面图：替换 `public/factory-map.png` 后重新部署。

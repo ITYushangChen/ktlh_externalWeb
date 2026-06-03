@@ -1,11 +1,10 @@
 "use client";
 
-export function FixedQRPanel({ appUrl }: { appUrl: string }) {
-  const url = appUrl;
-  const qrSrc = `/api/qr?u=${encodeURIComponent(url)}`;
+import { FACTORY_QR_IMAGE, FACTORY_SITE_URL } from "@/lib/factory-qr";
 
+export function FixedQRPanel() {
   const copy = async () => {
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(FACTORY_SITE_URL);
     alert("链接已复制");
   };
 
@@ -18,18 +17,18 @@ export function FixedQRPanel({ appUrl }: { appUrl: string }) {
       <div className="flex flex-col sm:flex-row gap-6 items-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={qrSrc}
+          src={FACTORY_QR_IMAGE}
           alt="厂区送货固定二维码"
           width={220}
           height={220}
           className="rounded-lg border border-slate-200 shrink-0"
         />
         <div className="flex-1 text-center sm:text-left space-y-3">
-          <p className="text-xs text-slate-500 break-all">{url}</p>
+          <p className="text-xs text-slate-500 break-all">{FACTORY_SITE_URL}</p>
           <div className="flex flex-wrap gap-2">
             <a
-              href={qrSrc}
-              download="ktlh-delivery-qr.png"
+              href={FACTORY_QR_IMAGE}
+              download="qr-ktlhweb.xyz.png"
               className="btn btn-primary no-underline text-sm"
             >
               下载 PNG

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FixedQRPanel } from "./FixedQRPanel";
 import type { DeliveryType } from "@/types/site";
 
-export function AdminDashboard({ appUrl }: { appUrl: string }) {
+export function AdminDashboard() {
   const [flow, setFlow] = useState("");
   const [types, setTypes] = useState<DeliveryType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,7 +99,7 @@ export function AdminDashboard({ appUrl }: { appUrl: string }) {
 
   return (
     <div className="space-y-8">
-      <FixedQRPanel appUrl={appUrl} />
+      <FixedQRPanel />
 
       <section className="card p-6 space-y-4">
         <h2 className="font-bold text-lg">送货流程（全类型共用）</h2>
