@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getAppBaseUrl } from "@/lib/env";
 import type { DeliveryBundle, DeliveryListItem } from "@/types/delivery";
 
 export function generateDeliveryCode(): string {
@@ -10,15 +11,13 @@ export function generateDeliveryCode(): string {
   return code;
 }
 
-/** 固定二维码指向的司机入口 */
+/** 固定二维码指向的司机入口（首页选货） */
 export function getDriverPortalUrl(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3999";
-  return `${base.replace(/\/$/, "")}/s`;
+  return getAppBaseUrl();
 }
 
 export function getDeliveryGuideUrl(id: string): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3999";
-  return `${base.replace(/\/$/, "")}/s/${id}`;
+  return `${getAppBaseUrl()}/guide/${id}`;
 }
 
 export async function fetchActiveDeliveryList(

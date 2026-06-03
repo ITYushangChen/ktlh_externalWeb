@@ -62,7 +62,7 @@ export function PathMap2D({
             <polyline
               points={poly}
               fill="none"
-              stroke="#2563eb"
+              stroke="#0c4a6e"
               strokeWidth={4}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -83,7 +83,7 @@ export function PathMap2D({
                   cx={sx}
                   cy={sy}
                   r={isActive ? 14 : 10}
-                  fill={isDest ? "#16a34a" : isActive ? "#2563eb" : "#94a3b8"}
+                  fill={isDest ? "#16a34a" : isActive ? "#0c4a6e" : "#94a3b8"}
                   stroke="white"
                   strokeWidth={3}
                 />
@@ -104,8 +104,8 @@ export function PathMap2D({
       </div>
 
       {active && (
-        <div className="card p-4 bg-blue-50 border-blue-200">
-          <p className="text-xs text-blue-600 font-semibold mb-1">
+        <div className="driver-card p-4 bg-[var(--brand-soft)] border-[var(--brand-soft)]">
+          <p className="text-xs text-[var(--brand)] font-semibold mb-1">
             当前节点 {activeIndex + 1} / {ordered.length}
             {active.floor > 1 && ` · ${active.floor} 楼`}
           </p>

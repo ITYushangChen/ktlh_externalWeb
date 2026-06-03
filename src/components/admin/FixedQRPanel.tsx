@@ -39,8 +39,8 @@ export function FixedQRPanel() {
             <button type="button" className="btn btn-secondary text-sm" onClick={copy}>
               复制链接
             </button>
-            <a href="/s" target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-sm no-underline">
-              预览选货页
+            <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-secondary text-sm no-underline">
+              预览司机首页
             </a>
           </div>
         </div>

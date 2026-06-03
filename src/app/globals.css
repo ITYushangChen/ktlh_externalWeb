@@ -1,12 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f8fafc;
+  --bg: #f0f4f8;
   --card: #ffffff;
   --text: #0f172a;
   --muted: #64748b;
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
+  --brand: #0c4a6e;
+  --brand-mid: #0369a1;
+  --brand-soft: #e0f2fe;
+  --brand-hero: linear-gradient(145deg, #0c4a6e 0%, #0369a1 55%, #0284c7 100%);
   --success: #16a34a;
   --border: #e2e8f0;
 }
@@ -15,7 +17,7 @@
   --color-background: var(--bg);
   --color-foreground: var(--text);
   --font-sans: ui-sans-serif, system-ui, -apple-system, "PingFang SC",
-    "Microsoft YaHei", sans-serif;
+    "Microsoft YaHei", "Helvetica Neue", sans-serif;
 }
 
 * {
@@ -33,12 +35,165 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
-  color: var(--accent);
+  color: var(--brand-mid);
 }
 
+/* 司机端：限制最大宽度，大屏也像手机 */
+.driver-page {
+  max-width: 430px;
+  margin: 0 auto;
+  background: var(--bg);
+}
+
+.driver-hero {
+  background: var(--brand-hero);
+  color: white;
+  border-radius: 0 0 1.75rem 1.75rem;
+  box-shadow: 0 12px 40px rgb(12 74 110 / 22%);
+}
+
+.driver-hero-badge {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.driver-hero-title {
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  margin-top: 0.35rem;
+}
+
+.driver-hero-sub {
+  font-size: 1rem;
+  opacity: 0.88;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.driver-back {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: rgb(255 255 255 / 0.85);
+  padding: 0.25rem 0;
+}
+
+.driver-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.125rem;
+  box-shadow: 0 4px 20px rgb(15 23 42 / 6%);
+}
+
+.driver-type-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.125rem;
+  padding: 1.125rem 1rem;
+  box-shadow: 0 4px 16px rgb(15 23 42 / 5%);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.driver-type-card:active {
+  transform: scale(0.98);
+  border-color: var(--brand-mid);
+  box-shadow: 0 2px 12px rgb(3 105 161 / 12%);
+}
+
+.driver-type-index {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.driver-chevron {
+  font-size: 1.75rem;
+  font-weight: 300;
+  color: var(--brand-mid);
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.driver-tab {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.driver-tab-active {
+  background: var(--brand);
+  color: white;
+  box-shadow: 0 2px 8px rgb(12 74 110 / 25%);
+}
+
+.driver-section-title {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.driver-step-num {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background: var(--brand);
+  color: white;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgb(12 74 110 / 30%);
+}
+
+.driver-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.25rem;
+  border-radius: 0.875rem;
+  font-weight: 700;
+  background: var(--brand);
+  color: white;
+  box-shadow: 0 4px 14px rgb(12 74 110 / 28%);
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.driver-btn-primary:active {
+  opacity: 0.92;
+  transform: scale(0.98);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 管理后台样式 */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -64,7 +219,7 @@ a {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: var(--brand-mid);
   color: white;
 }
 
@@ -73,8 +228,8 @@ a {
 }
 
 .btn-secondary {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 .input {
@@ -87,8 +242,8 @@ a {
 }
 
 .input:focus {
-  outline: 2px solid var(--accent-soft);
-  border-color: var(--accent);
+  outline: 2px solid var(--brand-soft);
+  border-color: var(--brand-mid);
 }
 
 .label {

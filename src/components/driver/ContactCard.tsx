@@ -5,34 +5,32 @@ export function ContactCard({ contact }: { contact: DeliveryContact }) {
 
   return (
     <div
-      className={`card p-4 ${contact.is_primary ? "ring-2 ring-blue-500" : ""}`}
+      className={`driver-card p-5 ${contact.is_primary ? "ring-2 ring-[var(--brand)] ring-offset-2" : ""}`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-semibold text-lg">{contact.name}</p>
+          <p className="font-bold text-xl text-slate-900">{contact.name}</p>
           {contact.role && (
-            <p className="text-sm text-slate-500">{contact.role}</p>
+            <p className="text-sm text-slate-500 mt-0.5">{contact.role}</p>
           )}
         </div>
         {contact.is_primary && (
-          <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded-full shrink-0">
+          <span className="text-xs font-bold bg-[var(--brand-soft)] text-[var(--brand)] px-2.5 py-1 rounded-full shrink-0">
             主联系人
           </span>
         )}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <a
-          href={`tel:${tel}`}
-          className="btn btn-primary flex-1 min-w-[120px] text-center no-underline"
-        >
-          拨打电话
-        </a>
-        {contact.wechat && (
-          <span className="btn btn-secondary flex-1 min-w-[120px] text-center text-sm">
-            微信：{contact.wechat}
-          </span>
-        )}
-      </div>
+      <a
+        href={`tel:${tel}`}
+        className="driver-btn-primary mt-4 w-full no-underline text-center text-[1.0625rem]"
+      >
+        📞 拨打 {contact.phone}
+      </a>
+      {contact.wechat && (
+        <p className="text-center text-sm text-slate-500 mt-3">
+          微信号：{contact.wechat}
+        </p>
+      )}
     </div>
   );
 }

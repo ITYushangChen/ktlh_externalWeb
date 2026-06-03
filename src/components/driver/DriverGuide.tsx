@@ -12,7 +12,7 @@ type Tab = "flow" | "contacts" | "map2d" | "map3d";
 
 export function DriverGuide({
   data,
-  backHref = "/s",
+  backHref = "/",
 }: {
   data: DeliveryBundle;
   backHref?: string;
@@ -21,59 +21,66 @@ export function DriverGuide({
   const hasPath = nodes.length > 0;
   const [tab, setTab] = useState<Tab>("flow");
 
-  const tabs: { id: Tab; label: string; show: boolean }[] = [
-    { id: "flow", label: "流程", show: true },
-    { id: "contacts", label: "联系人", show: contacts.length > 0 },
-    { id: "map2d", label: "平面图", show: hasPath },
-    { id: "map3d", label: "3D", show: hasPath },
+  const tabs: { id: Tab; label: string; icon: string; show: boolean }[] = [
+    { id: "flow", label: "流程", icon: "📋", show: true },
+    { id: "contacts", label: "联系人", icon: "📞", show: contacts.length > 0 },
+    { id: "map2d", label: "路线图", icon: "🗺️", show: hasPath },
+    { id: "map3d", label: "3D", icon: "📐", show: hasPath },
   ];
 
+  const visibleTabs = tabs.filter((t) => t.show);
+
   return (
-    <div className="min-h-screen pb-8">
-      <header className="bg-blue-600 text-white px-4 pt-6 pb-8 rounded-b-3xl shadow-lg">
-        <Link
-          href={backHref}
-          className="text-blue-100 text-sm mb-3 inline-block no-underline hover:text-white"
-        >
-          ← 重新选择货物
+    <div className="driver-page min-h-[100dvh] pb-10">
+      <header className="driver-hero px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-10">
+        <Link href={backHref} className="driver-back no-underline">
+          ← 返回
         </Link>
-        <h1 className="text-2xl font-bold mt-1">{delivery.title}</h1>
-        {delivery.supplier_name && (
-          <p className="text-blue-100 text-sm mt-2">供应商：{delivery.supplier_name}</p>
-        )}
-        {delivery.cargo_description && (
-          <p className="text-white/90 text-sm mt-1">货物：{delivery.cargo_description}</p>
+        <p className="driver-hero-badge mt-4">送货指引</p>
+        <h1 className="driver-hero-title text-[1.35rem] leading-tight mt-2">
+          {delivery.title}
+        </h1>
+        {(delivery.cargo_description || delivery.supplier_name) && (
+          <div className="mt-3 space-y-1 text-sm text-white/85">
+            {delivery.cargo_description && <p>{delivery.cargo_description}</p>}
+            {delivery.supplier_name && (
+              <p className="text-white/70">供应商：{delivery.supplier_name}</p>
+            )}
+          </div>
         )}
       </header>
 
-      <div className="px-4 -mt-4">
-        <nav className="card flex p-1 gap-1 overflow-x-auto">
-          {tabs
-            .filter((t) => t.show)
-            .map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={`flex-1 min-w-[4rem] py-2 px-3 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-                  tab === t.id
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      <div className="px-4 -mt-5 relative z-10">
+        <nav
+          className="driver-card flex p-1.5 gap-1 overflow-x-auto scrollbar-hide"
+          aria-label="内容切换"
+        >
+          {visibleTabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`driver-tab flex-1 min-w-[4.5rem] py-2.5 px-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${
+                tab === t.id ? "driver-tab-active" : "text-slate-600"
+              }`}
+            >
+              <span className="mr-0.5" aria-hidden>
+                {t.icon}
+              </span>
+              {t.label}
+            </button>
+          ))}
         </nav>
 
         <section className="mt-4">
           {tab === "flow" && (
-            <div className="card p-4">
-              <h2 className="font-bold mb-4">送货流程</h2>
+            <div className="driver-card p-5">
+              <h2 className="driver-section-title">送货流程</h2>
+              <p className="text-xs text-slate-500 mb-4">请按顺序完成以下步骤</p>
               <StepsTimeline steps={steps} />
               {delivery.notes && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
-                  <strong>备注：</strong>
+                <div className="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-200/80 text-sm text-amber-950 leading-relaxed">
+                  <span className="font-bold">温馨提示：</span>
                   {delivery.notes}
                 </div>
               )}
@@ -82,7 +89,8 @@ export function DriverGuide({
 
           {tab === "contacts" && (
             <div className="space-y-3">
-              <h2 className="font-bold px-1">请联系以下人员</h2>
+              <h2 className="driver-section-title px-1">对接联系人</h2>
+              <p className="text-xs text-slate-500 px-1 mb-2">点击下方按钮直接拨号</p>
               {contacts.map((c) => (
                 <ContactCard key={c.id} contact={c} />
               ))}
@@ -91,20 +99,15 @@ export function DriverGuide({
 
           {tab === "map2d" && hasPath && (
             <div>
-              <h2 className="font-bold mb-3 px-1">场内路线（平面图）</h2>
-              <p className="text-xs text-slate-500 mb-3 px-1">
-                点击节点或使用「上一步 / 下一步」按顺序行进
-              </p>
+              <h2 className="driver-section-title px-1 mb-3">场内路线</h2>
               <PathMap2D nodes={nodes} edges={edges} />
             </div>
           )}
 
           {tab === "map3d" && hasPath && (
             <div>
-              <h2 className="font-bold mb-3 px-1">场内路线（3D）</h2>
-              <p className="text-xs text-slate-500 mb-3 px-1">
-                拖动旋转视角，双指缩放
-              </p>
+              <h2 className="driver-section-title px-1 mb-3">立体路线</h2>
+              <p className="text-xs text-slate-500 mb-3 px-1">双指缩放 · 拖动旋转</p>
               <PathMap3D nodes={nodes} edges={edges} />
             </div>
           )}

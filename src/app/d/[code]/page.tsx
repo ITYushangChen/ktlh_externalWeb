@@ -13,8 +13,8 @@ export default async function LegacyDeliveryPage({
   const data = await fetchDeliveryByCode(supabase, code);
 
   if (!data) {
-    redirect("/s");
+    redirect("/");
   }
 
-  redirect(`/s/${data.delivery.id}`);
+  redirect(`/guide/${data.delivery.id}`);
 }

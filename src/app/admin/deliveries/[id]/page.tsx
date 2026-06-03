@@ -46,7 +46,7 @@ export default function DeliveryDetailPage() {
             司机使用厂区<strong>固定二维码</strong>进入选货页，选择本条目后查看指引。
           </p>
           <Link
-            href={`/s/${delivery.id}`}
+            href={`/guide/${delivery.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 font-semibold"
