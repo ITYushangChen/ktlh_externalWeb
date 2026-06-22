@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const ADMIN_COOKIE = "ktlh_admin";
 
-/** 设为 true 且配置 ADMIN_SECRET 后，管理后台才需要密码 */
+/** 设为 true 且配置 ADMIN_SECRET 后，受保护路由才需要密码 */
 function isAdminAuthEnabled(): boolean {
   return (
     process.env.ADMIN_REQUIRE_AUTH === "true" &&
@@ -11,8 +11,22 @@ function isAdminAuthEnabled(): boolean {
   );
 }
 
+function isProtectedPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/business-develop") ||
+    pathname.startsWith("/api/business-develop")
+  );
+}
+
+function isLoginPath(pathname: string): boolean {
+  return pathname === "/admin/login";
+}
+
 export function middleware(request: NextRequest) {
-  if (!request.nextUrl.pathname.startsWith("/admin")) {
+  const { pathname } = request.nextUrl;
+
+  if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -20,7 +34,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (request.nextUrl.pathname === "/admin/login") {
+  if (isLoginPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -31,10 +45,15 @@ export function middleware(request: NextRequest) {
   }
 
   const login = new URL("/admin/login", request.url);
-  login.searchParams.set("from", request.nextUrl.pathname);
+  login.searchParams.set("from", pathname);
   return NextResponse.redirect(login);
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: [
+    "/admin/:path*",
+    "/business-develop",
+    "/business-develop/:path*",
+    "/api/business-develop/:path*",
+  ],
 };

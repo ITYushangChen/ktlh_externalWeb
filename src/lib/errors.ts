@@ -37,6 +37,12 @@ function formatPostgrestMessage(
     lower.includes("could not find the table") ||
     lower.includes("schema cache")
   ) {
+    if (lower.includes("business_prospects")) {
+      return (
+        "数据库尚未升级：请在 Supabase SQL Editor 执行 " +
+        "supabase/migrations/004_business_prospects.sql，然后刷新页面。"
+      );
+    }
     if (lower.includes("delivery_types") || lower.includes("site_settings")) {
       return (
         "数据库尚未升级：请在 Supabase SQL Editor 执行 " +

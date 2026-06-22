@@ -14,6 +14,12 @@ export default function AdminLayout({
             开拓隆海 · 管理
           </Link>
           <Link
+            href="/business-develop"
+            className="text-sm text-blue-600 font-semibold no-underline"
+          >
+            业务拓展
+          </Link>
+          <Link
             href="/"
             target="_blank"
             rel="noopener noreferrer"
