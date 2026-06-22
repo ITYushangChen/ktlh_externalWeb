@@ -5,18 +5,43 @@ import { PROSPECT_STAGES, type ProspectInput } from "@/types/business-develop";
 
 const VALID_STAGES = new Set(PROSPECT_STAGES.map((s) => s.id));
 
+const PROSPECT_SELECT = `
+  *,
+  contacts:business_prospect_contacts(
+    *,
+    email_schedules:business_prospect_email_schedules(*)
+  )
+`;
+
+function normalizeProspects<T extends { contacts?: Array<{ is_active?: boolean; email_schedules?: unknown[]; sort_order?: number }> }>(
+  rows: T[]
+): T[] {
+  return rows.map((row) => ({
+    ...row,
+    contacts: (row.contacts ?? [])
+      .filter((c) => c.is_active !== false)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      .map((c) => ({
+        ...c,
+        email_schedules: ((c.email_schedules as Array<{ scheduled_at: string }>) ?? []).sort(
+          (a, b) => a.scheduled_at.localeCompare(b.scheduled_at)
+        ),
+      })),
+  }));
+}
+
 export async function GET() {
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("business_prospects")
-      .select("*")
+      .select(PROSPECT_SELECT)
       .eq("is_active", true)
       .order("sort_order")
       .order("created_at");
 
     if (error) throw error;
-    return NextResponse.json({ prospects: data ?? [] });
+    return NextResponse.json({ prospects: normalizeProspects(data ?? []) });
   } catch (e) {
     return NextResponse.json({ error: formatApiError(e) }, { status: 500 });
   }
@@ -43,7 +68,7 @@ export async function POST(request: Request) {
       .eq("stage", stage)
       .eq("is_active", true);
 
-    const { data, error } = await supabase
+    const { data: prospect, error } = await supabase
       .from("business_prospects")
       .insert({
         company_name: body.company_name.trim(),
@@ -51,8 +76,8 @@ export async function POST(request: Request) {
         annual_demand: body.annual_demand?.trim() ?? "",
         location: body.location?.trim() ?? "",
         stage,
-        contact_name: body.contact_name?.trim() ?? "",
-        contact_phone: body.contact_phone?.trim() ?? "",
+        contact_name: "",
+        contact_phone: "",
         notes: body.notes?.trim() ?? "",
         sort_order: body.sort_order ?? (count ?? 0),
         is_active: true,
@@ -61,7 +86,30 @@ export async function POST(request: Request) {
       .single();
 
     if (error) throw error;
-    return NextResponse.json({ prospect: data });
+
+    const contacts = (body.contacts ?? []).filter((c) => c.name?.trim());
+    if (contacts.length > 0) {
+      const { error: contactError } = await supabase.from("business_prospect_contacts").insert(
+        contacts.map((c, i) => ({
+          prospect_id: prospect.id,
+          name: c.name.trim(),
+          phone: c.phone?.trim() ?? "",
+          email: c.email?.trim() ?? "",
+          sort_order: c.sort_order ?? i,
+          is_active: true,
+        }))
+      );
+      if (contactError) throw contactError;
+    }
+
+    const { data: full, error: fetchError } = await supabase
+      .from("business_prospects")
+      .select(PROSPECT_SELECT)
+      .eq("id", prospect.id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    return NextResponse.json({ prospect: normalizeProspects([full])[0] });
   } catch (e) {
     return NextResponse.json({ error: formatApiError(e) }, { status: 500 });
   }

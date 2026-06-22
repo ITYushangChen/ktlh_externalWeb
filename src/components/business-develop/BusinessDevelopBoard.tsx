@@ -18,9 +18,11 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ProspectContactsPanel } from "./ProspectContactsPanel";
 import {
   PROSPECT_STAGES,
   type BusinessProspect,
+  type ContactInput,
   type ProspectInput,
   type ProspectStage,
 } from "@/types/business-develop";
@@ -31,9 +33,8 @@ const EMPTY_FORM: ProspectInput = {
   annual_demand: "",
   location: "",
   stage: "lead",
-  contact_name: "",
-  contact_phone: "",
   notes: "",
+  contacts: [{ name: "", phone: "", email: "" }],
 };
 
 function groupByStage(prospects: BusinessProspect[]) {
@@ -57,6 +58,21 @@ function formatWebsite(url: string) {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+function contactSummary(prospect: BusinessProspect) {
+  const contacts = prospect.contacts ?? [];
+  if (contacts.length === 0) {
+    if (prospect.contact_name || prospect.contact_phone) {
+      return [prospect.contact_name, prospect.contact_phone].filter(Boolean).join(" · ");
+    }
+    return null;
+  }
+  if (contacts.length === 1) {
+    const c = contacts[0];
+    return [c.name, c.phone].filter(Boolean).join(" · ");
+  }
+  return `${contacts.length} 位联系人 · ${contacts[0].name}${contacts.length > 1 ? " 等" : ""}`;
+}
+
 function ProspectCardContent({
   prospect,
   onClick,
@@ -66,6 +82,8 @@ function ProspectCardContent({
   onClick?: () => void;
   isDragging?: boolean;
 }) {
+  const summary = contactSummary(prospect);
+
   return (
     <div
       className={`rounded-lg border bg-white p-3 shadow-sm transition-shadow ${
@@ -95,10 +113,8 @@ function ProspectCardContent({
       {prospect.website && (
         <p className="text-xs text-blue-600 mt-1 truncate">{formatWebsite(prospect.website)}</p>
       )}
-      {(prospect.contact_name || prospect.contact_phone) && (
-        <p className="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">
-          {[prospect.contact_name, prospect.contact_phone].filter(Boolean).join(" · ")}
-        </p>
+      {summary && (
+        <p className="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">{summary}</p>
       )}
     </div>
   );
@@ -173,18 +189,79 @@ function KanbanColumn({
   );
 }
 
+function ContactRows({
+  contacts,
+  onChange,
+}: {
+  contacts: ContactInput[];
+  onChange: (contacts: ContactInput[]) => void;
+}) {
+  const update = (index: number, patch: Partial<ContactInput>) => {
+    onChange(contacts.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  };
+
+  return (
+    <div className="sm:col-span-2 lg:col-span-3 space-y-2">
+      <label className="label">联系人（可添加多位）</label>
+      {contacts.map((c, i) => (
+        <div key={i} className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <input
+            className="input"
+            placeholder="姓名"
+            value={c.name}
+            onChange={(e) => update(i, { name: e.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="电话（选填）"
+            type="tel"
+            value={c.phone ?? ""}
+            onChange={(e) => update(i, { phone: e.target.value })}
+          />
+          <input
+            className="input"
+            placeholder="邮箱（选填）"
+            type="email"
+            value={c.email ?? ""}
+            onChange={(e) => update(i, { email: e.target.value })}
+          />
+          <button
+            type="button"
+            className="btn btn-secondary text-sm"
+            disabled={contacts.length <= 1}
+            onClick={() => onChange(contacts.filter((_, j) => j !== i))}
+          >
+            移除
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        className="text-sm text-blue-600 font-semibold"
+        onClick={() => onChange([...contacts, { name: "", phone: "", email: "" }])}
+      >
+        + 再加一位联系人
+      </button>
+    </div>
+  );
+}
+
 function EditModal({
   prospect,
   onClose,
   onSave,
   onDelete,
+  onRefresh,
   saving,
+  onError,
 }: {
   prospect: BusinessProspect;
   onClose: () => void;
   onSave: (data: ProspectInput) => Promise<void>;
   onDelete: () => Promise<void>;
+  onRefresh: () => Promise<void>;
   saving: boolean;
+  onError: (msg: string) => void;
 }) {
   const [form, setForm] = useState<ProspectInput>({
     company_name: prospect.company_name,
@@ -192,8 +269,6 @@ function EditModal({
     annual_demand: prospect.annual_demand,
     location: prospect.location,
     stage: prospect.stage,
-    contact_name: prospect.contact_name,
-    contact_phone: prospect.contact_phone,
     notes: prospect.notes,
   });
 
@@ -202,9 +277,13 @@ function EditModal({
     await onSave(form);
   };
 
+  const refreshContacts = async () => {
+    await onRefresh();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 space-y-4">
+      <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg">编辑客户</h2>
           <button type="button" className="text-slate-400 hover:text-slate-600 text-xl leading-none" onClick={onClose}>
@@ -267,25 +346,6 @@ function EditModal({
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="label">联系人</label>
-              <input
-                className="input"
-                value={form.contact_name}
-                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="label">联系电话</label>
-              <input
-                className="input"
-                type="tel"
-                value={form.contact_phone}
-                onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
-              />
-            </div>
-          </div>
           <div>
             <label className="label">备注</label>
             <textarea
@@ -296,10 +356,10 @@ function EditModal({
           </div>
           <div className="flex flex-wrap gap-2 pt-2">
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? "保存中…" : "保存"}
+              {saving ? "保存中…" : "保存基本信息"}
             </button>
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              取消
+              关闭
             </button>
             <button
               type="button"
@@ -307,10 +367,17 @@ function EditModal({
               disabled={saving}
               onClick={onDelete}
             >
-              删除
+              删除客户
             </button>
           </div>
         </form>
+
+        <ProspectContactsPanel
+          prospectId={prospect.id}
+          contacts={prospect.contacts ?? []}
+          onChanged={refreshContacts}
+          onError={onError}
+        />
       </div>
     </div>
   );
@@ -334,18 +401,21 @@ export function BusinessDevelopBoard() {
   const grouped = useMemo(() => groupByStage(prospects), [prospects]);
   const activeProspect = activeId ? prospects.find((p) => p.id === activeId) : null;
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/business-develop/prospects");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setProspects(json.prospects ?? []);
+      const list: BusinessProspect[] = json.prospects ?? [];
+      setProspects(list);
+      return list;
     } catch (e) {
       setError(e instanceof Error ? e.message : "加载失败");
+      return [];
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -353,15 +423,24 @@ export function BusinessDevelopBoard() {
     load();
   }, [load]);
 
+  const refreshEditing = async () => {
+    const list = await load(true);
+    if (editing) {
+      const updated = list.find((p) => p.id === editing.id);
+      if (updated) setEditing(updated);
+    }
+  };
+
   const addProspect = async (e: React.FormEvent) => {
     e.preventDefault();
     setAdding(true);
     setError(null);
     try {
+      const contacts = (form.contacts ?? []).filter((c) => c.name?.trim());
       const res = await fetch("/api/business-develop/prospects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, contacts }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -387,8 +466,7 @@ export function BusinessDevelopBoard() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setEditing(null);
-      await load();
+      await refreshEditing();
     } catch (e) {
       setError(e instanceof Error ? e.message : "保存失败");
     } finally {
@@ -543,23 +621,10 @@ export function BusinessDevelopBoard() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="label">联系人</label>
-              <input
-                className="input"
-                value={form.contact_name}
-                onChange={(e) => setForm({ ...form, contact_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label className="label">联系电话</label>
-              <input
-                className="input"
-                type="tel"
-                value={form.contact_phone}
-                onChange={(e) => setForm({ ...form, contact_phone: e.target.value })}
-              />
-            </div>
+            <ContactRows
+              contacts={form.contacts ?? [{ name: "", phone: "", email: "" }]}
+              onChange={(contacts) => setForm({ ...form, contacts })}
+            />
             <div className="sm:col-span-2 lg:col-span-3">
               <label className="label">备注</label>
               <textarea
@@ -609,7 +674,9 @@ export function BusinessDevelopBoard() {
           onClose={() => setEditing(null)}
           onSave={saveProspect}
           onDelete={deleteProspect}
+          onRefresh={refreshEditing}
           saving={saving}
+          onError={setError}
         />
       )}
 

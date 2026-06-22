@@ -9,6 +9,33 @@ export const PROSPECT_STAGES = [
 
 export type ProspectStage = (typeof PROSPECT_STAGES)[number]["id"];
 
+export type EmailScheduleStatus = "pending" | "sent" | "failed" | "cancelled";
+
+export interface EmailSchedule {
+  id: string;
+  contact_id: string;
+  subject: string;
+  body: string;
+  scheduled_at: string;
+  status: EmailScheduleStatus;
+  sent_at: string | null;
+  error_message: string;
+  created_at: string;
+}
+
+export interface ProspectContact {
+  id: string;
+  prospect_id: string;
+  name: string;
+  phone: string;
+  email: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  email_schedules?: EmailSchedule[];
+}
+
 export interface BusinessProspect {
   id: string;
   company_name: string;
@@ -23,6 +50,20 @@ export interface BusinessProspect {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  contacts?: ProspectContact[];
+}
+
+export interface ContactInput {
+  name: string;
+  phone?: string;
+  email?: string;
+  sort_order?: number;
+}
+
+export interface EmailScheduleInput {
+  subject: string;
+  body: string;
+  scheduled_at: string;
 }
 
 export interface ProspectInput {
@@ -31,13 +72,19 @@ export interface ProspectInput {
   annual_demand?: string;
   location?: string;
   stage?: ProspectStage;
-  contact_name?: string;
-  contact_phone?: string;
   notes?: string;
   sort_order?: number;
+  contacts?: ContactInput[];
 }
 
 export interface ProspectMoveInput {
   stage: ProspectStage;
   sort_order: number;
 }
+
+export const EMAIL_STATUS_LABELS: Record<EmailScheduleStatus, string> = {
+  pending: "待发送",
+  sent: "已发送",
+  failed: "发送失败",
+  cancelled: "已取消",
+};
