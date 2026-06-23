@@ -59,6 +59,13 @@ function formatWebsite(url: string) {
   return url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
+function normalizeWebsiteHref(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 function contactSummary(prospect: BusinessProspect) {
   const contacts = prospect.contacts ?? [];
   if (contacts.length === 0) {
@@ -115,7 +122,17 @@ function ProspectCardContent({
         <p className="text-xs text-slate-600 mt-1">需求量：{prospect.annual_demand}</p>
       )}
       {prospect.website && (
-        <p className="text-xs text-blue-600 mt-1 truncate">{formatWebsite(prospect.website)}</p>
+        <a
+          href={normalizeWebsiteHref(prospect.website)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-600 mt-1 truncate block hover:underline"
+          title={normalizeWebsiteHref(prospect.website)}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          🔗 {formatWebsite(prospect.website)}
+        </a>
       )}
       {summary && (
         <p className="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">{summary}</p>
