@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ProspectContactsPanel } from "./ProspectContactsPanel";
+import { LocalTimeBadge } from "./LocalTimeBadge";
 import {
   PROSPECT_STAGES,
   type BusinessProspect,
@@ -103,7 +104,10 @@ function ProspectCardContent({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <p className="font-semibold text-sm leading-snug">{prospect.company_name}</p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-semibold text-sm leading-snug flex-1 min-w-0">{prospect.company_name}</p>
+        {prospect.location && <LocalTimeBadge location={prospect.location} />}
+      </div>
       {prospect.location && (
         <p className="text-xs text-slate-500 mt-1">📍 {prospect.location}</p>
       )}
