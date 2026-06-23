@@ -7,26 +7,37 @@ const VALID_STAGES = new Set(PROSPECT_STAGES.map((s) => s.id));
 
 const PROSPECT_SELECT = `
   *,
-  contacts:business_prospect_contacts(
+  contacts:business_prospect_contacts!business_prospect_contacts_prospect_id_fkey(
     *,
     email_schedules:business_prospect_email_schedules(*)
   )
 `;
 
-function normalizeProspects<T extends { contacts?: Array<{ is_active?: boolean; email_schedules?: unknown[]; sort_order?: number }> }>(
+function dedupeContacts<T extends { id: string; is_active?: boolean; sort_order?: number }>(
+  contacts: T[]
+): T[] {
+  const seen = new Set<string>();
+  return contacts
+    .filter((c) => c.is_active !== false)
+    .filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    })
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+function normalizeProspects<T extends { contacts?: Array<{ id: string; is_active?: boolean; email_schedules?: unknown[]; sort_order?: number }> }>(
   rows: T[]
 ): T[] {
   return rows.map((row) => ({
     ...row,
-    contacts: (row.contacts ?? [])
-      .filter((c) => c.is_active !== false)
-      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-      .map((c) => ({
-        ...c,
-        email_schedules: ((c.email_schedules as Array<{ scheduled_at: string }>) ?? []).sort(
-          (a, b) => a.scheduled_at.localeCompare(b.scheduled_at)
-        ),
-      })),
+    contacts: dedupeContacts(row.contacts ?? []).map((c) => ({
+      ...c,
+      email_schedules: ((c.email_schedules as Array<{ scheduled_at: string }>) ?? []).sort(
+        (a, b) => a.scheduled_at.localeCompare(b.scheduled_at)
+      ),
+    })),
   }));
 }
 

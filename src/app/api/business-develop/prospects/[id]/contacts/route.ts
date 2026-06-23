@@ -36,7 +36,31 @@ export async function POST(
       return NextResponse.json({ error: "请填写联系人姓名" }, { status: 400 });
     }
 
+    const trimmedName = body.name.trim();
+    const trimmedPhone = body.phone?.trim() ?? "";
+    const trimmedEmail = body.email?.trim() ?? "";
+
     const supabase = createAdminClient();
+
+    // 防止重复提交在短时间内插入两条相同记录
+    const { data: recentDuplicate } = await supabase
+      .from("business_prospect_contacts")
+      .select("*")
+      .eq("prospect_id", prospectId)
+      .eq("is_active", true)
+      .eq("name", trimmedName)
+      .eq("phone", trimmedPhone)
+      .eq("email", trimmedEmail)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const duplicate = recentDuplicate?.[0];
+    if (duplicate) {
+      const ageMs = Date.now() - new Date(duplicate.created_at).getTime();
+      if (ageMs < 10_000) {
+        return NextResponse.json({ contact: duplicate });
+      }
+    }
 
     const { count } = await supabase
       .from("business_prospect_contacts")
@@ -48,9 +72,9 @@ export async function POST(
       .from("business_prospect_contacts")
       .insert({
         prospect_id: prospectId,
-        name: body.name.trim(),
-        phone: body.phone?.trim() ?? "",
-        email: body.email?.trim() ?? "",
+        name: trimmedName,
+        phone: trimmedPhone,
+        email: trimmedEmail,
         sort_order: body.sort_order ?? (count ?? 0),
         is_active: true,
       })

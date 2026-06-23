@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   EMAIL_STATUS_LABELS,
   type EmailSchedule,
@@ -297,13 +297,16 @@ export function ProspectContactsPanel({
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [adding, setAdding] = useState(false);
+  const submittingRef = useRef(false);
 
-  const addContact = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const addContact = async () => {
+    if (submittingRef.current || adding) return;
     if (!name.trim()) {
       onError("请填写联系人姓名");
       return;
     }
+
+    submittingRef.current = true;
     setAdding(true);
     try {
       const res = await fetch(`/api/business-develop/prospects/${prospectId}/contacts`, {
@@ -320,6 +323,7 @@ export function ProspectContactsPanel({
     } catch (err) {
       onError(err instanceof Error ? err.message : "添加联系人失败");
     } finally {
+      submittingRef.current = false;
       setAdding(false);
     }
   };
@@ -337,7 +341,15 @@ export function ProspectContactsPanel({
         />
       ))}
 
-      <form onSubmit={addContact} className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl">
+      <div
+        className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-slate-50 rounded-xl"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.target as HTMLElement).tagName !== "TEXTAREA") {
+            e.preventDefault();
+            void addContact();
+          }
+        }}
+      >
         <input
           className="input text-sm"
           placeholder="姓名 *"
@@ -359,11 +371,11 @@ export function ProspectContactsPanel({
           onChange={(e) => setEmail(e.target.value)}
         />
         <div className="sm:col-span-3">
-          <button type="submit" className="btn btn-secondary text-sm py-1.5" disabled={adding}>
+          <button type="button" className="btn btn-secondary text-sm py-1.5" disabled={adding} onClick={addContact}>
             {adding ? "添加中…" : "+ 添加联系人"}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
