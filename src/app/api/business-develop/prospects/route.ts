@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatApiError } from "@/lib/errors";
+import { assertBusinessAuthApi } from "@/lib/business-auth";
 import { PROSPECT_STAGES, type ProspectInput } from "@/types/business-develop";
 
 const VALID_STAGES = new Set(PROSPECT_STAGES.map((s) => s.id));
@@ -42,6 +43,9 @@ function normalizeProspects<T extends { contacts?: Array<{ id: string; is_active
 }
 
 export async function GET() {
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -59,6 +63,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = (await request.json()) as ProspectInput;
 

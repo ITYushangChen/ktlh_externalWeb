@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  BUSINESS_SESSION_COOKIE,
+  isBusinessAuthConfiguredEdge,
+  verifyBusinessSessionEdge,
+} from "@/lib/business-auth-edge";
 
 const ADMIN_COOKIE = "ktlh_admin";
 
-/** 设为 true 且配置 ADMIN_SECRET 后，受保护路由才需要密码 */
 function isAdminAuthEnabled(): boolean {
   return (
     process.env.ADMIN_REQUIRE_AUTH === "true" &&
@@ -11,22 +15,60 @@ function isAdminAuthEnabled(): boolean {
   );
 }
 
-function isProtectedPath(pathname: string): boolean {
+function isAdminPath(pathname: string): boolean {
+  return pathname.startsWith("/admin");
+}
+
+function isBusinessPath(pathname: string): boolean {
   return (
-    pathname.startsWith("/admin") ||
     pathname.startsWith("/business-develop") ||
     pathname.startsWith("/api/business-develop")
   );
 }
 
-function isLoginPath(pathname: string): boolean {
-  return pathname === "/admin/login";
+function isBusinessPublicPath(pathname: string): boolean {
+  return (
+    pathname === "/business-develop/login" ||
+    pathname === "/api/business-develop/auth/login" ||
+    pathname === "/api/business-develop/auth/setup"
+  );
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!isProtectedPath(pathname)) {
+  if (isBusinessPath(pathname)) {
+    if (isBusinessPublicPath(pathname)) {
+      return NextResponse.next();
+    }
+
+    if (!isBusinessAuthConfiguredEdge()) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "服务端未配置 BUSINESS_SESSION_SECRET" },
+          { status: 503 }
+        );
+      }
+      const login = new URL("/business-develop/login", request.url);
+      login.searchParams.set("error", "config");
+      return NextResponse.redirect(login);
+    }
+
+    const token = request.cookies.get(BUSINESS_SESSION_COOKIE)?.value;
+    const valid = await verifyBusinessSessionEdge(token);
+    if (!valid) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "未登录或登录已过期" }, { status: 401 });
+      }
+      const login = new URL("/business-develop/login", request.url);
+      login.searchParams.set("from", pathname);
+      return NextResponse.redirect(login);
+    }
+
+    return NextResponse.next();
+  }
+
+  if (!isAdminPath(pathname)) {
     return NextResponse.next();
   }
 
@@ -34,7 +76,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isLoginPath(pathname)) {
+  if (pathname === "/admin/login") {
     return NextResponse.next();
   }
 

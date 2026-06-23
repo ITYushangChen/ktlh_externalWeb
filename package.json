@@ -15,6 +15,8 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.8",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.3",
     "next": "^15.3.3",
     "nodemailer": "^9.0.1",
     "qrcode": "^1.5.4",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.7",
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.21",
     "@types/nodemailer": "^8.0.1",
     "@types/qrcode": "^1.5.5",

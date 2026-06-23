@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatApiError } from "@/lib/errors";
+import { assertBusinessAuthApi } from "@/lib/business-auth";
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = (await request.json()) as { status?: string };
     if (body.status !== "cancelled") {

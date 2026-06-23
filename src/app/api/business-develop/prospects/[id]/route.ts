@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatApiError } from "@/lib/errors";
+import { assertBusinessAuthApi } from "@/lib/business-auth";
 import {
   PROSPECT_STAGES,
   type ProspectInput,
@@ -14,6 +15,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = (await request.json()) as Partial<ProspectInput> &
       Partial<ProspectMoveInput> & { is_active?: boolean };
@@ -57,6 +61,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const supabase = createAdminClient();
     const { error } = await supabase

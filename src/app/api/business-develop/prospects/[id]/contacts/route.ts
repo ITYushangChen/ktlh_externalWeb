@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formatApiError } from "@/lib/errors";
+import { assertBusinessAuthApi } from "@/lib/business-auth";
 import type { ContactInput } from "@/types/business-develop";
 
 export async function GET(
@@ -8,6 +9,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const supabase = createAdminClient();
     const { data, error } = await supabase
@@ -29,6 +33,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: prospectId } = await params;
+  const auth = await assertBusinessAuthApi();
+  if (auth instanceof NextResponse) return auth;
+
   try {
     const body = (await request.json()) as ContactInput;
 
