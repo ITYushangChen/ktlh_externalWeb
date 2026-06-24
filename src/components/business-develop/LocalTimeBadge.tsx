@@ -78,7 +78,16 @@ export function LocalTimeBadge({ location }: { location: string }) {
     );
   }
 
-  if (!geocoded || !time) return null;
+  if (!geocoded || !time) {
+    return (
+      <span
+        className="text-[11px] text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded shrink-0"
+        title={`未能解析时区：${location}`}
+      >
+        --
+      </span>
+    );
+  }
 
   const offset = getTimezoneLabel(geocoded.timezone);
   const place = formatPlaceLabel(geocoded);
