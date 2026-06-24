@@ -10,7 +10,8 @@ const PROSPECT_SELECT = `
   *,
   contacts:business_prospect_contacts!business_prospect_contacts_prospect_id_fkey(
     *,
-    email_schedules:business_prospect_email_schedules(*)
+    email_schedules:business_prospect_email_schedules(*),
+    communication_logs:business_prospect_contact_logs(*)
   )
 `;
 
@@ -38,6 +39,9 @@ function normalizeProspects<T extends { contacts?: Array<{ id: string; is_active
       email_schedules: ((c.email_schedules as Array<{ scheduled_at: string }>) ?? []).sort(
         (a, b) => a.scheduled_at.localeCompare(b.scheduled_at)
       ),
+      communication_logs: (
+        (c as { communication_logs?: Array<{ contacted_at: string }> }).communication_logs ?? []
+      ).sort((a, b) => b.contacted_at.localeCompare(a.contacted_at)),
     })),
   }));
 }

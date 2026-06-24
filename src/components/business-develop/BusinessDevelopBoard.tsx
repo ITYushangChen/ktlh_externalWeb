@@ -27,6 +27,7 @@ import {
   type ProspectInput,
   type ProspectStage,
 } from "@/types/business-develop";
+import { formatRelativeTime, getLastContactedAt } from "@/lib/format-relative-time";
 
 const EMPTY_FORM: ProspectInput = {
   company_name: "",
@@ -81,6 +82,17 @@ function contactSummary(prospect: BusinessProspect) {
   return `${contacts.length} 位联系人 · ${contacts[0].name}${contacts.length > 1 ? " 等" : ""}`;
 }
 
+function prospectLastContactLabel(prospect: BusinessProspect): string | null {
+  const contacts = prospect.contacts ?? [];
+  let latest: string | null = null;
+  for (const c of contacts) {
+    const at = getLastContactedAt(c.communication_logs ?? []);
+    if (at && (!latest || at > latest)) latest = at;
+  }
+  if (!latest) return null;
+  return `${formatRelativeTime(latest)}联系`;
+}
+
 function ProspectCardContent({
   prospect,
   onClick,
@@ -91,6 +103,7 @@ function ProspectCardContent({
   isDragging?: boolean;
 }) {
   const summary = contactSummary(prospect);
+  const lastContact = prospectLastContactLabel(prospect);
 
   return (
     <div
@@ -136,6 +149,9 @@ function ProspectCardContent({
       )}
       {summary && (
         <p className="text-xs text-slate-400 mt-2 border-t border-slate-100 pt-2">{summary}</p>
+      )}
+      {lastContact && (
+        <p className="text-xs text-amber-700 mt-1">🕐 最近 {lastContact}</p>
       )}
     </div>
   );

@@ -23,6 +23,24 @@ export interface EmailSchedule {
   created_at: string;
 }
 
+export interface ContactCommunicationLog {
+  id: string;
+  contact_id: string;
+  subject: string;
+  notes: string;
+  contacted_at: string;
+  has_replied: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactLogInput {
+  subject: string;
+  notes?: string;
+  contacted_at?: string;
+  has_replied?: boolean;
+}
+
 export interface ProspectContact {
   id: string;
   prospect_id: string;
@@ -34,6 +52,7 @@ export interface ProspectContact {
   created_at: string;
   updated_at: string;
   email_schedules?: EmailSchedule[];
+  communication_logs?: ContactCommunicationLog[];
 }
 
 export interface BusinessProspect {

@@ -3,9 +3,11 @@
 import { useRef, useState } from "react";
 import {
   EMAIL_STATUS_LABELS,
+  type ContactCommunicationLog,
   type EmailSchedule,
   type ProspectContact,
 } from "@/types/business-develop";
+import { formatRelativeTime } from "@/lib/format-relative-time";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("zh-CN", {
@@ -18,11 +20,8 @@ function formatDateTime(iso: string) {
 }
 
 function toDatetimeLocalValue(iso?: string) {
-  if (!iso) {
-    const d = new Date(Date.now() + 3600_000);
-    return d.toISOString().slice(0, 16);
-  }
-  return new Date(iso).toISOString().slice(0, 16);
+  const d = iso ? new Date(iso) : new Date();
+  return d.toISOString().slice(0, 16);
 }
 
 function statusBadgeClass(status: EmailSchedule["status"]) {
@@ -36,6 +35,34 @@ function statusBadgeClass(status: EmailSchedule["status"]) {
     case "cancelled":
       return "bg-slate-100 text-slate-600";
   }
+}
+
+function getLatestLog(logs: ContactCommunicationLog[]): ContactCommunicationLog | null {
+  if (!logs.length) return null;
+  return logs.reduce((a, b) => (a.contacted_at >= b.contacted_at ? a : b));
+}
+
+function LastContactBadge({ logs }: { logs: ContactCommunicationLog[] }) {
+  const latest = getLatestLog(logs);
+  if (!latest) {
+    return (
+      <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-semibold">
+        尚未联系
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${
+        latest.has_replied ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+      }`}
+      title={`上次联系：${formatDateTime(latest.contacted_at)}`}
+    >
+      {formatRelativeTime(latest.contacted_at)}联系
+      {latest.has_replied ? " · 已回复" : " · 待回复"}
+    </span>
+  );
 }
 
 function ContactCard({
@@ -53,11 +80,18 @@ function ContactCard({
   const [email, setEmail] = useState(contact.email);
   const [busy, setBusy] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [showLogForm, setShowLogForm] = useState(false);
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [scheduledAt, setScheduledAt] = useState(toDatetimeLocalValue());
+  const [logSubject, setLogSubject] = useState("");
+  const [logNotes, setLogNotes] = useState("");
+  const [logContactedAt, setLogContactedAt] = useState(toDatetimeLocalValue());
+  const [logHasReplied, setLogHasReplied] = useState(false);
+  const submittingLogRef = useRef(false);
 
   const schedules = contact.email_schedules ?? [];
+  const logs = contact.communication_logs ?? [];
 
   const saveContact = async () => {
     if (!name.trim()) {
@@ -87,6 +121,77 @@ function ContactCard({
     setBusy(true);
     try {
       const res = await fetch(`/api/business-develop/contacts/${contact.id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      await onChanged();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "删除失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addLog = async () => {
+    if (submittingLogRef.current || busy) return;
+    if (!logSubject.trim()) {
+      onError("请填写联络事项");
+      return;
+    }
+
+    submittingLogRef.current = true;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/business-develop/contacts/${contact.id}/communications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: logSubject,
+          notes: logNotes,
+          contacted_at: new Date(logContactedAt).toISOString(),
+          has_replied: logHasReplied,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      setLogSubject("");
+      setLogNotes("");
+      setLogContactedAt(toDatetimeLocalValue());
+      setLogHasReplied(false);
+      setShowLogForm(false);
+      await onChanged();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "添加联络记录失败");
+    } finally {
+      submittingLogRef.current = false;
+      setBusy(false);
+    }
+  };
+
+  const toggleReplied = async (log: ContactCommunicationLog) => {
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/business-develop/communications/${log.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ has_replied: !log.has_replied }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      await onChanged();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "更新失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeLog = async (log: ContactCommunicationLog) => {
+    if (!confirm(`确定删除联络记录「${log.subject}」？`)) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/business-develop/communications/${log.id}`, {
         method: "DELETE",
       });
       const json = await res.json();
@@ -184,13 +289,16 @@ function ContactCard({
         </div>
       ) : (
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <p className="font-semibold text-sm">{contact.name}</p>
-            <p className="text-xs text-slate-500 mt-0.5">
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-sm">{contact.name}</p>
+              <LastContactBadge logs={logs} />
+            </div>
+            <p className="text-xs text-slate-500">
               {[phone && `📞 ${phone}`, email && `✉️ ${email}`].filter(Boolean).join(" · ") || "未填写联系方式"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <button type="button" className="text-xs text-blue-600 font-semibold" onClick={() => setEditing(true)}>
               编辑
             </button>
@@ -200,6 +308,99 @@ function ContactCard({
           </div>
         </div>
       )}
+
+      <div className="border-t border-slate-200 pt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold text-slate-600">联络记录</p>
+          <button
+            type="button"
+            className="text-xs text-blue-600 font-semibold"
+            onClick={() => setShowLogForm((v) => !v)}
+          >
+            {showLogForm ? "收起" : "+ 新增联络"}
+          </button>
+        </div>
+
+        {showLogForm && (
+          <div className="space-y-2 bg-white rounded-lg p-3 border border-slate-200">
+            <input
+              className="input text-sm"
+              placeholder="联络事项 *"
+              value={logSubject}
+              onChange={(e) => setLogSubject(e.target.value)}
+            />
+            <textarea
+              className="input text-sm min-h-[60px]"
+              placeholder="备注（选填）"
+              value={logNotes}
+              onChange={(e) => setLogNotes(e.target.value)}
+            />
+            <div>
+              <label className="label text-xs">联系时间</label>
+              <input
+                className="input text-sm"
+                type="datetime-local"
+                value={logContactedAt}
+                onChange={(e) => setLogContactedAt(e.target.value)}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={logHasReplied}
+                onChange={(e) => setLogHasReplied(e.target.checked)}
+              />
+              对方已回复
+            </label>
+            <button type="button" className="btn btn-primary text-sm py-1.5" disabled={busy} onClick={addLog}>
+              {busy ? "保存中…" : "保存联络记录"}
+            </button>
+          </div>
+        )}
+
+        {logs.length === 0 ? (
+          <p className="text-xs text-slate-400">暂无联络记录</p>
+        ) : (
+          <ul className="space-y-2">
+            {logs.map((log) => (
+              <li key={log.id} className="bg-white rounded-lg p-2.5 border border-slate-200 text-xs">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{log.subject}</p>
+                    <p className="text-slate-500 mt-0.5">{formatDateTime(log.contacted_at)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => toggleReplied(log)}
+                    className={`px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                      log.has_replied
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {log.has_replied ? "已回复" : "未回复"}
+                  </button>
+                </div>
+                {log.notes && (
+                  <p className="text-slate-600 mt-1 whitespace-pre-wrap">{log.notes}</p>
+                )}
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-slate-400">{formatRelativeTime(log.contacted_at)}</span>
+                  <button
+                    type="button"
+                    className="text-red-600 font-semibold"
+                    disabled={busy}
+                    onClick={() => removeLog(log)}
+                  >
+                    删除
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <div className="border-t border-slate-200 pt-3 space-y-2">
         <div className="flex items-center justify-between">
