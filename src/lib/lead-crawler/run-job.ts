@@ -1,8 +1,9 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { KeywordSearchReport } from "@/types/lead-crawler";
 import { analyzeProspectWithAi } from "./ai-analyze";
 import { fetchPageContent } from "./fetch-page";
 import { importProspectFromAnalysis, prospectDomainExists } from "./import-prospect";
-import { searchWeb } from "./search";
+import { buildSearchFailureMessage, searchWeb } from "./search";
 import { extractDomain } from "./url-utils";
 
 export async function createCrawlJob(keywords: string[]) {
@@ -21,11 +22,13 @@ export async function createCrawlJob(keywords: string[]) {
 
   try {
     const allItems: Array<{ keyword: string; url: string; title: string; snippet: string; sort_order: number }> = [];
+    const searchReports: KeywordSearchReport[] = [];
     let order = 0;
 
     for (const keyword of keywords) {
-      const results = await searchWeb(keyword);
-      for (const r of results) {
+      const { items, report } = await searchWeb(keyword);
+      searchReports.push(report);
+      for (const r of items) {
         allItems.push({
           keyword,
           url: r.url,
@@ -59,7 +62,22 @@ export async function createCrawlJob(keywords: string[]) {
       if (queueError) throw queueError;
     }
 
-    const status = queueRows.length > 0 ? "processing" : "completed";
+    if (queueRows.length === 0) {
+      const errorMessage = buildSearchFailureMessage(searchReports);
+      await supabase
+        .from("business_lead_crawl_jobs")
+        .update({
+          status: "failed",
+          total_urls: 0,
+          error_message: errorMessage,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", job.id);
+
+      return { jobId: job.id, totalUrls: 0, searchReports, searchSummary: errorMessage };
+    }
+
+    const status = "processing";
     await supabase
       .from("business_lead_crawl_jobs")
       .update({
@@ -69,7 +87,7 @@ export async function createCrawlJob(keywords: string[]) {
       })
       .eq("id", job.id);
 
-    return { jobId: job.id, totalUrls: queueRows.length };
+    return { jobId: job.id, totalUrls: queueRows.length, searchReports };
   } catch (e) {
     await supabase
       .from("business_lead_crawl_jobs")

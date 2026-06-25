@@ -35,6 +35,13 @@ export interface SearchResultItem {
   snippet: string;
 }
 
+export interface KeywordSearchReport {
+  keyword: string;
+  resultCount: number;
+  provider: "google" | "duckduckgo" | "none";
+  message?: string;
+}
+
 export interface ExtractedContact {
   name: string;
   phone: string;

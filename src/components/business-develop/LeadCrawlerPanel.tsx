@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { LeadCrawlJob, LeadCrawlQueueItem } from "@/types/lead-crawler";
+import type { KeywordSearchReport, LeadCrawlJob, LeadCrawlQueueItem } from "@/types/lead-crawler";
 
 const DEFAULT_KEYWORDS = `pressure vessel manufacturer
 air conditioner manufacturer
@@ -35,6 +35,7 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<LeadCrawlJob | null>(null);
   const [recent, setRecent] = useState<LeadCrawlQueueItem[]>([]);
+  const [searchReports, setSearchReports] = useState<KeywordSearchReport[]>([]);
   const abortRef = useRef(false);
 
   const refreshJob = useCallback(async (jobId: string) => {
@@ -96,6 +97,7 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
     setError(null);
     setJob(null);
     setRecent([]);
+    setSearchReports([]);
     abortRef.current = false;
 
     try {
@@ -107,7 +109,18 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
 
+      if (json.searchReports?.length) {
+        setSearchReports(json.searchReports);
+      }
+
       await refreshJob(json.jobId);
+
+      if (json.totalUrls === 0) {
+        setError(json.searchSummary || "搜索未找到任何网页，请查看下方详情");
+        setRunning(false);
+        return;
+      }
+
       await runTicks(json.jobId);
     } catch (e) {
       setError(e instanceof Error ? e.message : "启动失败");
@@ -203,8 +216,28 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
             </div>
           )}
           {job.error_message && (
-            <p className="text-sm text-red-700">{job.error_message}</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 whitespace-pre-wrap">
+              {job.error_message}
+            </div>
           )}
+        </div>
+      )}
+
+      {searchReports.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+          <h3 className="text-sm font-semibold text-amber-900">各关键词搜索结果</h3>
+          <ul className="space-y-2 text-sm text-amber-950">
+            {searchReports.map((report) => (
+              <li key={report.keyword} className="border-b border-amber-100 pb-2 last:border-0 last:pb-0">
+                <div className="font-medium">{report.keyword}</div>
+                <div className="text-amber-800 mt-0.5">
+                  {report.resultCount > 0
+                    ? `找到 ${report.resultCount} 条（${report.provider === "google" ? "Google" : "DuckDuckGo"}）`
+                    : report.message || "无结果"}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
