@@ -18,6 +18,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { LeadCrawlerPanel } from "./LeadCrawlerPanel";
 import { ProspectContactsPanel } from "./ProspectContactsPanel";
 import { LocalTimeBadge } from "./LocalTimeBadge";
 import {
@@ -590,6 +591,8 @@ export function BusinessDevelopBoard() {
 
   return (
     <div className="space-y-6">
+      <LeadCrawlerPanel onImported={() => load(true)} />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm text-slate-500">
