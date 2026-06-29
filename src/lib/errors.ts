@@ -55,6 +55,12 @@ function formatPostgrestMessage(
         "supabase/migrations/005_prospect_contacts_emails.sql，然后刷新页面。"
       );
     }
+    if (lower.includes("waibao_")) {
+      return (
+        "数据库尚未升级：请在 Supabase SQL Editor 执行 " +
+        "supabase/migrations/009_waibao.sql，然后刷新页面。"
+      );
+    }
     if (lower.includes("business_lead_crawl")) {
       return (
         "数据库尚未升级：请在 Supabase SQL Editor 执行 " +

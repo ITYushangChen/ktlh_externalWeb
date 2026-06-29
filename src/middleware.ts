@@ -5,6 +5,11 @@ import {
   isBusinessAuthConfiguredEdge,
   verifyBusinessSessionEdge,
 } from "@/lib/business-auth-edge";
+import {
+  WAIBAO_SESSION_COOKIE,
+  isWaibaoAuthConfiguredEdge,
+  verifyWaibaoSessionEdge,
+} from "@/lib/waibao-auth-edge";
 
 const ADMIN_COOKIE = "ktlh_admin";
 
@@ -34,8 +39,51 @@ function isBusinessPublicPath(pathname: string): boolean {
   );
 }
 
+function isWaibaoPath(pathname: string): boolean {
+  return pathname.startsWith("/waibao") || pathname.startsWith("/api/waibao");
+}
+
+function isWaibaoPublicPath(pathname: string): boolean {
+  return (
+    pathname === "/waibao/login" ||
+    pathname === "/api/waibao/auth/login" ||
+    pathname === "/api/waibao/auth/setup"
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (isWaibaoPath(pathname)) {
+    if (isWaibaoPublicPath(pathname)) {
+      return NextResponse.next();
+    }
+
+    if (!isWaibaoAuthConfiguredEdge()) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json(
+          { error: "服务端未配置 WAIBAO_SESSION_SECRET" },
+          { status: 503 }
+        );
+      }
+      const login = new URL("/waibao/login", request.url);
+      login.searchParams.set("error", "config");
+      return NextResponse.redirect(login);
+    }
+
+    const token = request.cookies.get(WAIBAO_SESSION_COOKIE)?.value;
+    const valid = await verifyWaibaoSessionEdge(token);
+    if (!valid) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "未登录或登录已过期" }, { status: 401 });
+      }
+      const login = new URL("/waibao/login", request.url);
+      login.searchParams.set("from", pathname);
+      return NextResponse.redirect(login);
+    }
+
+    return NextResponse.next();
+  }
 
   if (isBusinessPath(pathname)) {
     if (isBusinessPublicPath(pathname)) {
@@ -97,5 +145,8 @@ export const config = {
     "/business-develop",
     "/business-develop/:path*",
     "/api/business-develop/:path*",
+    "/waibao",
+    "/waibao/:path*",
+    "/api/waibao/:path*",
   ],
 };

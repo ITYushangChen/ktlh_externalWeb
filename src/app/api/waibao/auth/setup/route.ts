@@ -1,0 +1,88 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { formatApiError } from "@/lib/errors";
+import {
+  WaibaoAuthError,
+  hashPassword,
+  isWaibaoAuthConfigured,
+} from "@/lib/waibao-auth";
+
+/** 首次初始化管理员（仅当尚无用户时） */
+export async function POST(request: Request) {
+  try {
+    if (!isWaibaoAuthConfigured()) {
+      return NextResponse.json(
+        { error: "服务端未配置 WAIBAO_SESSION_SECRET" },
+        { status: 500 }
+      );
+    }
+
+    const setupSecret = process.env.WAIBAO_SETUP_SECRET?.trim();
+    if (!setupSecret) {
+      return NextResponse.json(
+        { error: "服务端未配置 WAIBAO_SETUP_SECRET" },
+        { status: 500 }
+      );
+    }
+
+    const body = (await request.json()) as {
+      username?: string;
+      password?: string;
+      setupSecret?: string;
+    };
+
+    if (body.setupSecret !== setupSecret) {
+      return NextResponse.json({ error: "初始化密钥错误" }, { status: 403 });
+    }
+
+    const username = body.username?.trim().toLowerCase();
+    const password = body.password ?? "";
+
+    if (!username || username.length < 3) {
+      return NextResponse.json({ error: "账号至少 3 个字符" }, { status: 400 });
+    }
+    if (password.length < 8) {
+      return NextResponse.json({ error: "密码至少 8 位" }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+    const { count, error: countError } = await supabase
+      .from("waibao_users")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) throw countError;
+    if ((count ?? 0) > 0) {
+      return NextResponse.json({ error: "管理员已初始化，无法重复创建" }, { status: 409 });
+    }
+
+    const passwordHash = await hashPassword(password);
+    const { error: insertError } = await supabase.from("waibao_users").insert({
+      username,
+      password_hash: passwordHash,
+      role: "admin",
+      is_active: true,
+    });
+
+    if (insertError) throw insertError;
+    return NextResponse.json({ ok: true, username });
+  } catch (e) {
+    if (e instanceof WaibaoAuthError) {
+      return NextResponse.json({ error: e.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: formatApiError(e) }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = createAdminClient();
+    const { count, error } = await supabase
+      .from("waibao_users")
+      .select("*", { count: "exact", head: true });
+
+    if (error) throw error;
+    return NextResponse.json({ needsSetup: (count ?? 0) === 0 });
+  } catch (e) {
+    return NextResponse.json({ error: formatApiError(e) }, { status: 500 });
+  }
+}
