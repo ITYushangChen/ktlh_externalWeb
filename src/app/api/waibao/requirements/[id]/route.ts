@@ -43,6 +43,26 @@ export async function PATCH(
     }
     if (body.admin_note !== undefined) updates.admin_note = body.admin_note.trim();
 
+    const canEditContent = ["open", "claimed", "submitted"].includes(existing.status);
+
+    if (!canEditContent) {
+      delete updates.title;
+      delete updates.description;
+      delete updates.price;
+      if (
+        body.title !== undefined ||
+        body.description !== undefined ||
+        body.price !== undefined
+      ) {
+        if (existing.status === "completed" || existing.status === "cancelled") {
+          return NextResponse.json(
+            { error: "已完成或已取消的需求只能编辑备注" },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     if (body.status === "cancelled" && existing.status === "open") {
       updates.status = "cancelled";
     }

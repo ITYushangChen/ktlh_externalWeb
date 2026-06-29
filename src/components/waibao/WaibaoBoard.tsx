@@ -44,6 +44,12 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [editNote, setEditNote] = useState("");
+
   const load = useCallback(async () => {
     setError(null);
     try {
@@ -160,6 +166,50 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "取消失败");
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const startEdit = (req: WaibaoRequirement) => {
+    setEditingId(req.id);
+    setEditTitle(req.title);
+    setEditDesc(req.description);
+    setEditPrice(String(req.price));
+    setEditNote(req.admin_note);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditTitle("");
+    setEditDesc("");
+    setEditPrice("");
+    setEditNote("");
+  };
+
+  const saveEdit = async (req: WaibaoRequirement) => {
+    setActionId(req.id);
+    setError(null);
+    try {
+      const canEditContent = ["open", "claimed", "submitted"].includes(req.status);
+      const body: Record<string, unknown> = { admin_note: editNote };
+      if (canEditContent) {
+        body.title = editTitle;
+        body.description = editDesc;
+        body.price = Number(editPrice);
+      }
+
+      const res = await fetch(`/api/waibao/requirements/${req.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      cancelEdit();
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "保存失败");
     } finally {
       setActionId(null);
     }
@@ -295,6 +345,75 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
         <div className="space-y-4">
           {filtered.map((req) => (
             <article key={req.id} className="card p-6 space-y-3">
+              {editingId === req.id ? (
+                <div className="space-y-4">
+                  <h3 className="font-bold text-lg">编辑需求</h3>
+                  {["open", "claimed", "submitted"].includes(req.status) ? (
+                    <>
+                      <div>
+                        <label className="label">需求标题 *</label>
+                        <input
+                          className="input"
+                          required
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="label">需求描述</label>
+                        <textarea
+                          className="input min-h-[100px]"
+                          value={editDesc}
+                          onChange={(e) => setEditDesc(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="label">价格（元）*</label>
+                        <input
+                          className="input"
+                          type="number"
+                          required
+                          min={0}
+                          step={0.01}
+                          value={editPrice}
+                          onChange={(e) => setEditPrice(e.target.value)}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      该需求已{WAIBAO_STATUS_LABELS[req.status]}，仅可编辑备注
+                    </p>
+                  )}
+                  <div>
+                    <label className="label">管理员备注</label>
+                    <textarea
+                      className="input min-h-[72px]"
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      placeholder="验收说明、驳回原因等"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary text-sm"
+                      disabled={actionId === req.id}
+                      onClick={() => saveEdit(req)}
+                    >
+                      {actionId === req.id ? "保存中…" : "保存"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary text-sm"
+                      onClick={cancelEdit}
+                    >
+                      取消
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -387,7 +506,19 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
                     取消需求
                   </button>
                 )}
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary text-sm"
+                    onClick={() => startEdit(req)}
+                  >
+                    编辑
+                  </button>
+                )}
               </div>
+                </>
+              )}
             </article>
           ))}
         </div>
