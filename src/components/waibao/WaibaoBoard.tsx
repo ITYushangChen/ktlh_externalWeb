@@ -8,6 +8,11 @@ import {
   type WaibaoRequirementStatus,
   type WaibaoUser,
 } from "@/types/waibao";
+import {
+  WaibaoAttachments,
+  WaibaoPendingFiles,
+  uploadPendingFiles,
+} from "./WaibaoAttachments";
 
 function formatPrice(price: number) {
   return `¥${price.toLocaleString("zh-CN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
@@ -39,6 +44,7 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
   const [reqTitle, setReqTitle] = useState("");
   const [reqDesc, setReqDesc] = useState("");
   const [reqPrice, setReqPrice] = useState("");
+  const [createFiles, setCreateFiles] = useState<File[]>([]);
 
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newUsername, setNewUsername] = useState("");
@@ -116,9 +122,15 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+
+      if (createFiles.length > 0 && json.requirement?.id) {
+        await uploadPendingFiles(json.requirement.id, createFiles);
+      }
+
       setReqTitle("");
       setReqDesc("");
       setReqPrice("");
+      setCreateFiles([]);
       setShowCreateReq(false);
       await load();
     } catch (e) {
@@ -275,6 +287,7 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
               placeholder="500"
             />
           </div>
+          <WaibaoPendingFiles files={createFiles} onChange={setCreateFiles} />
           <button
             type="submit"
             className="btn btn-primary"
@@ -394,6 +407,13 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
                       placeholder="验收说明、驳回原因等"
                     />
                   </div>
+                  <WaibaoAttachments
+                    requirementId={req.id}
+                    attachments={req.attachments ?? []}
+                    isAdmin={isAdmin}
+                    showUpload
+                    onUpdated={load}
+                  />
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
@@ -446,6 +466,14 @@ export function WaibaoBoard({ user }: WaibaoBoardProps) {
                   管理员备注：{req.admin_note}
                 </p>
               )}
+
+              <WaibaoAttachments
+                requirementId={req.id}
+                attachments={req.attachments ?? []}
+                isAdmin={isAdmin}
+                showUpload={false}
+                onUpdated={load}
+              />
 
               <div className="flex flex-wrap gap-2 pt-1">
                 {req.status === "open" && (

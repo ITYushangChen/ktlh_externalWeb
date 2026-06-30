@@ -32,6 +32,18 @@ export interface WaibaoRequirement {
   updated_at: string;
   creator_username?: string;
   claimant_username?: string;
+  attachments?: WaibaoAttachment[];
+}
+
+export interface WaibaoAttachment {
+  id: string;
+  requirement_id: string;
+  file_name: string;
+  storage_path: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_by: string;
+  created_at: string;
 }
 
 export interface WaibaoRequirementInput {

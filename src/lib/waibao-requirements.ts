@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { WaibaoRequirement } from "@/types/waibao";
+import type { WaibaoAttachment, WaibaoRequirement } from "@/types/waibao";
 
 export async function listWaibaoRequirements(): Promise<WaibaoRequirement[]> {
   const supabase = createAdminClient();
@@ -9,7 +9,8 @@ export async function listWaibaoRequirements(): Promise<WaibaoRequirement[]> {
       `
       *,
       creator:waibao_users!waibao_requirements_created_by_fkey(username),
-      claimant:waibao_users!waibao_requirements_claimed_by_fkey(username)
+      claimant:waibao_users!waibao_requirements_claimed_by_fkey(username),
+      attachments:waibao_attachments(*)
     `
     )
     .order("sort_order")
@@ -27,6 +28,9 @@ export async function listWaibaoRequirements(): Promise<WaibaoRequirement[]> {
       price: Number(r.price),
       creator_username: r.creator?.username,
       claimant_username: r.claimant?.username,
+      attachments: ((r as { attachments?: WaibaoAttachment[] }).attachments ?? []).map(
+        (a) => ({ ...a, file_size: Number(a.file_size) })
+      ),
     };
   });
 }
@@ -39,7 +43,8 @@ export async function getWaibaoRequirement(id: string): Promise<WaibaoRequiremen
       `
       *,
       creator:waibao_users!waibao_requirements_created_by_fkey(username),
-      claimant:waibao_users!waibao_requirements_claimed_by_fkey(username)
+      claimant:waibao_users!waibao_requirements_claimed_by_fkey(username),
+      attachments:waibao_attachments(*)
     `
     )
     .eq("id", id)
@@ -58,5 +63,8 @@ export async function getWaibaoRequirement(id: string): Promise<WaibaoRequiremen
     price: Number(r.price),
     creator_username: r.creator?.username,
     claimant_username: r.claimant?.username,
+    attachments: ((r as { attachments?: WaibaoAttachment[] }).attachments ?? []).map(
+      (a) => ({ ...a, file_size: Number(a.file_size) })
+    ),
   };
 }
