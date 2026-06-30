@@ -20,15 +20,48 @@ const ALLOWED_MIME_TYPES = new Set([
   "text/plain",
 ]);
 
-function sanitizeFileName(name: string): string {
+const ALLOWED_EXTENSIONS = new Set([
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".xls",
+  ".xlsx",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".webp",
+  ".zip",
+  ".txt",
+]);
+
+function displayFileName(name: string): string {
   const base = name.replace(/[/\\?%*:|"<>]/g, "_").trim();
   return base.slice(0, 180) || "file";
+}
+
+function getSafeExtension(name: string): string {
+  const dot = name.lastIndexOf(".");
+  if (dot === -1) return "";
+  const ext = name.slice(dot).toLowerCase().replace(/[^a-z0-9.]/g, "");
+  return ALLOWED_EXTENSIONS.has(ext) ? ext : "";
+}
+
+/** Storage 路径仅用 UUID + 英文扩展名，避免中文文件名导致 Invalid key */
+function buildStoragePath(requirementId: string, originalName: string): string {
+  const ext = getSafeExtension(originalName);
+  return `${requirementId}/${randomUUID()}${ext}`;
 }
 
 export function validateAttachmentFile(file: File): string | null {
   if (file.size <= 0) return "文件为空";
   if (file.size > MAX_ATTACHMENT_BYTES) return "单个附件不能超过 10MB";
-  if (file.type && !ALLOWED_MIME_TYPES.has(file.type)) {
+
+  const ext = getSafeExtension(file.name);
+  const mimeOk = file.type && ALLOWED_MIME_TYPES.has(file.type);
+  const extOk = Boolean(ext);
+
+  if (!mimeOk && !extOk) {
     return "不支持的文件类型（支持 PDF、Word、Excel、图片、ZIP、TXT）";
   }
   return null;
@@ -43,8 +76,8 @@ export async function uploadWaibaoAttachment(
   if (validationError) throw new Error(validationError);
 
   const supabase = createAdminClient();
-  const safeName = sanitizeFileName(file.name);
-  const storagePath = `${requirementId}/${randomUUID()}_${safeName}`;
+  const fileName = displayFileName(file.name);
+  const storagePath = buildStoragePath(requirementId, file.name);
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const { error: uploadError } = await supabase.storage
@@ -55,19 +88,20 @@ export async function uploadWaibaoAttachment(
     });
 
   if (uploadError) {
-    if (uploadError.message.toLowerCase().includes("bucket")) {
+    const msg = uploadError.message.toLowerCase();
+    if (msg.includes("bucket")) {
       throw new Error(
         "Storage 桶 waibao-attachments 未创建，请在 Supabase Dashboard → Storage 创建私有桶，或执行 010_waibao_attachments.sql"
       );
     }
-    throw uploadError;
+    throw new Error(`附件上传失败：${uploadError.message}`);
   }
 
   const { data, error } = await supabase
     .from("waibao_attachments")
     .insert({
       requirement_id: requirementId,
-      file_name: safeName,
+      file_name: fileName,
       storage_path: storagePath,
       file_size: file.size,
       mime_type: file.type || "application/octet-stream",
