@@ -1,0 +1,24 @@
+import { NextResponse } from "next/server";
+import { getDeliveryNote } from "@/lib/supplier-orders";
+import { assertSupplierAuthApi, SupplierAuthError } from "@/lib/supplier-auth";
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await assertSupplierAuthApi();
+    const { id } = await params;
+    const note = await getDeliveryNote(id);
+    if (!note) {
+      return NextResponse.json({ error: "送货单不存在" }, { status: 404 });
+    }
+    return NextResponse.json({ deliveryNote: note });
+  } catch (e) {
+    if (e instanceof SupplierAuthError) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
+    const msg = e instanceof Error ? e.message : "加载失败";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

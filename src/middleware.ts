@@ -1,3 +1,4 @@
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
@@ -10,6 +11,7 @@ import {
   isWaibaoAuthConfiguredEdge,
   verifyWaibaoSessionEdge,
 } from "@/lib/waibao-auth-edge";
+import { getPublicSupabaseEnv } from "@/lib/env";
 
 const ADMIN_COOKIE = "ktlh_admin";
 
@@ -51,8 +53,76 @@ function isWaibaoPublicPath(pathname: string): boolean {
   );
 }
 
+function isSupplierPath(pathname: string): boolean {
+  return pathname.startsWith("/suppliers") || pathname.startsWith("/api/suppliers");
+}
+
+function isSupplierPublicPath(pathname: string): boolean {
+  return (
+    pathname === "/suppliers/login" ||
+    pathname === "/api/suppliers/auth/login"
+  );
+}
+
+async function handleSupplierAuth(request: NextRequest): Promise<NextResponse | null> {
+  const { pathname } = request.nextUrl;
+  if (!isSupplierPath(pathname)) return null;
+
+  const { url, anonKey } = getPublicSupabaseEnv();
+  if (!url || !anonKey) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "服务端未配置 Supabase" }, { status: 503 });
+    }
+    const login = new URL("/suppliers/login", request.url);
+    login.searchParams.set("error", "config");
+    return NextResponse.redirect(login);
+  }
+
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(url, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options?: object }[]) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        );
+      },
+    },
+  });
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (isSupplierPublicPath(pathname)) {
+    if (user && pathname === "/suppliers/login") {
+      return NextResponse.redirect(new URL("/suppliers", request.url));
+    }
+    return response;
+  }
+
+  if (!user) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "未登录或登录已过期" }, { status: 401 });
+    }
+    const login = new URL("/suppliers/login", request.url);
+    login.searchParams.set("from", pathname);
+    return NextResponse.redirect(login);
+  }
+
+  return response;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const supplierResponse = await handleSupplierAuth(request);
+  if (supplierResponse) return supplierResponse;
 
   if (isWaibaoPath(pathname)) {
     if (isWaibaoPublicPath(pathname)) {
@@ -148,5 +218,8 @@ export const config = {
     "/waibao",
     "/waibao/:path*",
     "/api/waibao/:path*",
+    "/suppliers",
+    "/suppliers/:path*",
+    "/api/suppliers/:path*",
   ],
 };
