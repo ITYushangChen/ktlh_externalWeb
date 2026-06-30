@@ -10,6 +10,7 @@ import {
   formatDateTime,
   formatMoney,
 } from "@/lib/supplier-delivery";
+import { DeliveryNoteQr } from "@/components/suppliers/DeliveryNoteQr";
 
 export function DeliveryNoteDetail({ noteId }: { noteId: string }) {
   const router = useRouter();
@@ -94,6 +95,7 @@ export function DeliveryNoteDetail({ noteId }: { noteId: string }) {
           </p>
         </div>
         <div className="flex gap-2">
+          <DeliveryNoteQr deliveryNumber={note.delivery_number} size={80} />
           <Link
             href={`/suppliers/delivery/${note.id}/print`}
             className="btn btn-secondary"

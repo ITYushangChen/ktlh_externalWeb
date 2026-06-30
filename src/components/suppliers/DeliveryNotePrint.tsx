@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DeliveryNoteWithItems } from "@/types/supplier";
+import { DeliveryNoteQr } from "@/components/suppliers/DeliveryNoteQr";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/supplier-delivery";
 
 export function DeliveryNotePrint({ noteId }: { noteId: string }) {
@@ -55,7 +56,19 @@ export function DeliveryNotePrint({ noteId }: { noteId: string }) {
       </div>
 
       <div className="max-w-[210mm] mx-auto p-8 print:p-6">
-        <h1 className="text-2xl font-bold text-center mb-8 tracking-widest">送 货 单</h1>
+        <div className="flex items-start justify-between gap-4 mb-8">
+          <h1 className="text-2xl font-bold tracking-widest flex-1 text-center pt-2">
+            送 货 单
+          </h1>
+          <div className="shrink-0 text-center">
+            <DeliveryNoteQr
+              deliveryNumber={note.delivery_number}
+              size={88}
+              showUrl={false}
+            />
+            <p className="text-[9px] text-slate-500 mt-1">仓库扫码收货</p>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-6 text-sm mb-6">
           <div className="space-y-2">
