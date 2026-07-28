@@ -150,7 +150,7 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
         <div>
           <h2 className="font-bold text-lg text-slate-900">AI 潜客爬虫</h2>
           <p className="text-sm text-slate-500 mt-1">
-            搜索 Google 关键词，AI 识别制冷/空调设备制造商，自动导入看板（官网联系方式标记为「官方」）
+            搜索关键词后，用浏览器打开官网（渲染 JS、模拟滚动），再由 AI 识别制冷/空调设备制造商并导入看板（官网联系方式标记为「官方」）
           </p>
         </div>
         <button
@@ -190,7 +190,8 @@ export function LeadCrawlerPanel({ onImported }: LeadCrawlerPanelProps) {
             )}
           </div>
           <p className="text-xs text-slate-400">
-            需配置 GOOGLE_CSE_API_KEY、GOOGLE_CSE_CX、DEEPSEEK_API_KEY。每个关键词约抓取 8 条结果，逐页 AI 分析后导入。
+            需配置 GOOGLE_CSE_API_KEY、GOOGLE_CSE_CX、DEEPSEEK_API_KEY；本机需执行 npx playwright install
+            chromium。每个关键词约抓取 8 条结果，浏览器逐页浏览后 AI 分析导入。
           </p>
         </div>
       )}

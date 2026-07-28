@@ -33,6 +33,8 @@ cp .env.example .env.local
 # 填入 Supabase 密钥与 ADMIN_SECRET
 
 npm install
+# 业务拓展「AI 潜客爬虫」抓页依赖 Playwright Chromium（仅本机/自有服务器）
+npx playwright install chromium
 npm run dev
 ```
 

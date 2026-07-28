@@ -3,6 +3,9 @@ import { assertBusinessAuthApi } from "@/lib/business-auth";
 import { formatApiError } from "@/lib/errors";
 import { processCrawlBatch } from "@/lib/lead-crawler/run-job";
 
+/** Playwright 打开单页可能较慢（本机/自有服务器） */
+export const maxDuration = 60;
+
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
