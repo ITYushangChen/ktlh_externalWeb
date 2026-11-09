@@ -2,11 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
-  BUSINESS_SESSION_COOKIE,
-  isBusinessAuthConfiguredEdge,
-  verifyBusinessSessionEdge,
-} from "@/lib/business-auth-edge";
-import {
   WAIBAO_SESSION_COOKIE,
   isWaibaoAuthConfiguredEdge,
   verifyWaibaoSessionEdge,
@@ -30,14 +25,6 @@ function isBusinessPath(pathname: string): boolean {
   return (
     pathname.startsWith("/business-develop") ||
     pathname.startsWith("/api/business-develop")
-  );
-}
-
-function isBusinessPublicPath(pathname: string): boolean {
-  return (
-    pathname === "/business-develop/login" ||
-    pathname === "/api/business-develop/auth/login" ||
-    pathname === "/api/business-develop/auth/setup"
   );
 }
 
@@ -156,34 +143,8 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isBusinessPath(pathname)) {
-    if (isBusinessPublicPath(pathname)) {
-      return NextResponse.next();
-    }
-
-    if (!isBusinessAuthConfiguredEdge()) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json(
-          { error: "服务端未配置 BUSINESS_SESSION_SECRET" },
-          { status: 503 }
-        );
-      }
-      const login = new URL("/business-develop/login", request.url);
-      login.searchParams.set("error", "config");
-      return NextResponse.redirect(login);
-    }
-
-    const token = request.cookies.get(BUSINESS_SESSION_COOKIE)?.value;
-    const valid = await verifyBusinessSessionEdge(token);
-    if (!valid) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "未登录或登录已过期" }, { status: 401 });
-      }
-      const login = new URL("/business-develop/login", request.url);
-      login.searchParams.set("from", pathname);
-      return NextResponse.redirect(login);
-    }
-
-    return NextResponse.next();
+    const nextPath = pathname.replace("/business-develop", "/business") + request.nextUrl.search;
+    return NextResponse.redirect(new URL(nextPath, "https://chenyushang.com"));
   }
 
   if (!isAdminPath(pathname)) {
